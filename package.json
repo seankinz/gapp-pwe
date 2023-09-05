@@ -1,0 +1,11 @@
+{
+  "name": "gapp-pwe",
+  "version": "1.0.0",
+  "description": "frontend of gayas own app",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "sean@kinzler.dev",
+  "license": "ISC"
+}
