@@ -62,6 +62,6 @@ self.addEventListener('activate', event => {
 if ('serviceWorker' in navigator) {
   console.log('adding service worker');
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('cache.js', { scope: '/' })
+    navigator.serviceWorker.register('cache.js', { scope: '/react-pwa.github.io/' })
   })
 }
