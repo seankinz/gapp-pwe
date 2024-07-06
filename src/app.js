@@ -9,68 +9,100 @@ const CACHED_URLS = [
   '/style.css'
 ]
 
-// Open cache on install.
-self.addEventListener('install', event => {
-  event.waitUntil(async function () {
-    const cache = await caches.open(CACHE_NAME)
+class App {
+  constructor() {
+    this.serviceWorker_ = null;
 
-    await cache.addAll(CACHED_URLS)
-  }())
-})
-
-// Cache and update with stale-while-revalidate policy.
-self.addEventListener('fetch', event => {
-  const { request } = event
-
-  if (request.cache === 'only-if-cached' && request.mode !== 'same-origin') {
-    return
+    if ('serviceWorker' in navigator) {
+      console.log('adding service worker');
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('src/cache.js', { scope: './src/' }).then(
+          serviceWorker => this.cacheWorkerCallback(serviceWorker));
+      });
+    }
   }
 
-  event.respondWith(async function () {
-    const cache = await caches.open(CACHE_NAME)
-
-    const cachedResponsePromise = await cache.match(request)
-    const networkResponsePromise = fetch(request)
-
-    if (request.url.startsWith(self.location.origin)) {
+  addEventListeners() {
+    // Open cache on install.
+    self.addEventListener('install', event => {
       event.waitUntil(async function () {
-        const networkResponse = await networkResponsePromise
+        const cache = await caches.open(CACHE_NAME)
 
-        await cache.put(request, networkResponse.clone())
+        await cache.addAll(CACHED_URLS)
+      }());
+    });
+
+    // Cache and update with stale-while-revalidate policy.
+    self.addEventListener('fetch', event => {
+      const { request } = event
+
+      if (request.cache === 'only-if-cached' && request.mode !== 'same-origin') {
+        return;
+      }
+
+      event.respondWith(async function () {
+        const cache = await caches.open(CACHE_NAME)
+
+        const cachedResponsePromise = await cache.match(request);
+        const networkResponsePromise = fetch(request);
+
+        if (request.url.startsWith(self.location.origin)) {
+          event.waitUntil(async function () {
+            const networkResponse = await networkResponsePromise;
+
+            await cache.put(request, networkResponse.clone());
+          }())
+        }
+
+        return cachedResponsePromise || networkResponsePromise;
       }())
+    });
+
+    // Clean up caches other than current.
+    self.addEventListener('activate', event => {
+      event.waitUntil(async function () {
+        const cacheNames = await caches.keys()
+
+        await Promise.all(
+          cacheNames.filter((cacheName) => {
+            const deleteThisCache = cacheName !== CACHE_NAME;
+
+            return deleteThisCache;
+          }).map(cacheName => caches.delete(cacheName))
+        )
+      }());
+    });
+  }
+
+  cacheWorkerCallback(serviceWorker) {
+      this.serviceWorker_ = serviceWorker;
+      this.setupNotifications();
+  }
+
+  setupNotifications() {
+    if (!this.serviceWorker_.showNotification) {
+      console.warn('Notifications aren\'t supported.');
+      return;
     }
-
-    return cachedResponsePromise || networkResponsePromise
-  }())
-})
-
-// Clean up caches other than current.
-self.addEventListener('activate', event => {
-  event.waitUntil(async function () {
-    const cacheNames = await caches.keys()
-
-    await Promise.all(
-      cacheNames.filter((cacheName) => {
-        const deleteThisCache = cacheName !== CACHE_NAME
-
-        return deleteThisCache
-      }).map(cacheName => caches.delete(cacheName))
-    )
-  }())
-})
-
-if ('serviceWorker' in navigator) {
-  console.log('adding service worker');
-  window.addEventListener('load', function () {
-    navigator.serviceWorker.register('cache.js', { scope: '/gapp-pwe/' })
-  })
+    if (Notification.permission === 'denied') {
+      console.warn('The user has blocked notifications.');
+      return;
+    }
+    if (!('PushManager' in window)) {
+      console.warn('Push messaging isn\'t supported.');
+      return;
+    }
+    navigator.serviceWorker.ready.then((swReg) => {
+      // Do we already have a push message subscription?
+      swReg.pushManager.getSubscription()
+      .then((subscription) => {
+          if(!subscription){
+             console.log('No Subscription endpoint present')
+          }
+      })
+   })
+  }
 }
 
-if (!('showNotification' in swReg.prototype)) {
-  console.warn('Notifications aren\'t supported.');
-  return;
-}
-if (Notification.permission === 'denied') {
-  console.warn('The user has blocked notifications.');
-  return;
-}
+const app = new App();
+app.addEventListeners();
