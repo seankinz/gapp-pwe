@@ -65,3 +65,12 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('cache.js', { scope: '/gapp-pwe/' })
   })
 }
+
+if (!('showNotification' in swReg.prototype)) {
+  console.warn('Notifications aren\'t supported.');
+  return;
+}
+if (Notification.permission === 'denied') {
+  console.warn('The user has blocked notifications.');
+  return;
+}

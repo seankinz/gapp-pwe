@@ -4,6 +4,8 @@
   "description": "frontend of gayas own app",
   "main": "app.js",
   "scripts": {
+    "start": "npm run open",
+    "open": "concurrently \"http-server -a localhost -p 8080\" \"open http://localhost:8080/\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "sean@kinzler.dev",
@@ -11,5 +13,9 @@
   "repository": {
     "type": "git",
     "url": "git://github.com/seankinz/gapp-pwe.git"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "http-server": "^14.1.1"
   }
 }
