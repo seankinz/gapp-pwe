@@ -1,3 +1,8 @@
+import * as css from "./style.css";
+import { initializeApp } from 'firebase/app';
+import { MessagePayload, deleteToken, getMessaging, getToken, onMessage } from 'firebase/messaging';
+import {firebaseConfig} from "./config.js";
+
 console.log('app starting');
 
 const CACHE_NAME = 'cache-v0.0.0'
@@ -12,6 +17,7 @@ const CACHED_URLS = [
 class App {
   constructor() {
     this.serviceWorker_ = null;
+    this.firebaseApp_ = initializeApp(firebaseConfig);
 
     if ('serviceWorker' in navigator) {
       console.log('adding service worker');
